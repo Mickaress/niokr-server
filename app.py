@@ -32,5 +32,20 @@ def get_vacancies():
     return jsonify({'vacancies': vacancies, 'amount': amount})
 
 
+# Получение одной вакансии
+@app.route("/api/vacancy/<int:vacancy_id>")
+def get_vacancy(vacancy_id):
+    with connect_db() as connection:
+        cursor = connection.cursor()
+
+        cursor.execute("SELECT * FROM vacancies WHERE is_accept = 1 AND id = ?", (vacancy_id,))
+        vacancy = cursor.fetchone()
+
+    if vacancy:
+        return jsonify({'vacancy': vacancy})
+    else:
+        return jsonify({'message': 'Вакансия не найдена'}), 404
+
+
 if __name__ == '__main__':
     app.run(debug=True)
