@@ -71,5 +71,20 @@ def get_projects():
     return jsonify({'projects': projects, 'amount': amount})
 
 
+# Получение одного НИОКР
+@app.route("/api/project/<int:project_id>")
+def get_project(project_id):
+    with connect_db() as connection:
+        cursor = connection.cursor()
+
+        cursor.execute("SELECT * FROM projects WHERE id = ?", (project_id,))
+        project = cursor.fetchone()
+
+    if project:
+        return jsonify({'project': project})
+    else:
+        return jsonify({'message': 'НИОКР не найден'}), 404
+
+
 if __name__ == '__main__':
     app.run(debug=True)
