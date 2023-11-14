@@ -47,5 +47,29 @@ def get_vacancy(vacancy_id):
         return jsonify({'message': 'Вакансия не найдена'}), 404
 
 
+# Получение списка НИОКР
+@app.route("/api/projects")
+def get_projects():
+    with connect_db() as connection:
+        cursor = connection.cursor()
+
+        # Общее количество записей для пагинации на фронте
+        cursor.execute("SELECT COUNT(*) FROM projects")
+        amount = cursor.fetchone()[0]
+
+        # Получение списка НИОКР на выбранной странице
+        page = int(request.args.get('page', 1))
+        items_per_page = 3
+        offset = (page - 1) * items_per_page
+        limit = items_per_page
+
+        cursor.execute("SELECT * FROM projects LIMIT ? OFFSET ?", (limit, offset))
+
+        columns = [column[0] for column in cursor.description]
+        projects = [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+    return jsonify({'projects': projects, 'amount': amount})
+
+
 if __name__ == '__main__':
     app.run(debug=True)
