@@ -97,6 +97,19 @@ def get_project(project_id):
     else:
         return jsonify({'message': 'НИОКР не найден'}), 404
 
+# Получение списка вакансий НИОКР
+@app.route("/api/project/vacancies/<int:project_id>")
+def get_project_vacancies(project_id):
+    with connect_db() as connection:
+        cursor = connection.cursor()
+
+        cursor.execute("SELECT * FROM vacancies WHERE project_id = ?", (project_id,))
+
+        columns = [column[0] for column in cursor.description]
+        vacancies = [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+        return jsonify({'projects': vacancies})
+
 
 # Получение полей для регистрации (руководителя и админа убираем из ролей, так как их нельзя регистрировать)
 @app.route("/api/user/props")
