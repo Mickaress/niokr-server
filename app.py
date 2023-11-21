@@ -319,5 +319,31 @@ def auth():
         return jsonify(access_token=access_token), 200
 
 
+# Получение списка НИОКР руководителя
+@app.route("/api/supervisor/projects")
+@jwt_required()
+def get_supervisor_projects():
+    with connect_db() as connection:
+        cursor = connection.cursor()
+
+        user_id = get_jwt_identity()
+
+        cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+        existing_user = cursor.fetchone()
+
+        columns = [column[0] for column in cursor.description]
+        user = {columns[i]: existing_user[i] for i in range(len(columns))}
+
+        if user['role_id'] != 3:
+            return jsonify({'error': 'Нет доступа'}), 400
+
+        cursor.execute("SELECT * FROM projects WHERE supervisor_id = ?", (user['id'],))
+
+        columns = [column[0] for column in cursor.description]
+        projects = [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+        return jsonify({'projects': projects})
+
+
 if __name__ == '__main__':
     app.run(debug=True)
