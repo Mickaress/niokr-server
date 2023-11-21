@@ -1,10 +1,19 @@
 from flask import Flask, request, jsonify
 import sqlite3
-from werkzeug.security import generate_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
 import re
 from datetime import datetime
+from flask_jwt_extended import create_access_token, JWTManager, jwt_required, get_jwt_identity
 
 app = Flask(__name__)
+
+app.config['JWT_SECRET_KEY'] = 'your_jwt_secret_key'
+jwt = JWTManager(app)
+
+
+@jwt.unauthorized_loader
+def unauthorized_callback(callback):
+    return jsonify({'error': 'Нет доступа'}), 401
 
 
 def connect_db():
@@ -275,6 +284,39 @@ def registration():
             return jsonify({'message': 'Успешная регистрация'})
 
         return jsonify({'error': 'Указана несуществующая роль'}), 400
+
+
+# Авторизация
+@app.route("/api/user/auth", methods=['POST'])
+def auth():
+    with connect_db() as connection:
+        cursor = connection.cursor()
+
+        data = request.get_json()
+
+        # Проверка на необходимые поля
+        error_response = required_fields(data, ['email', 'password'])
+        if error_response:
+            return jsonify({'error': error_response}), 400
+
+        # Валидация почты
+        if not is_valid_email(data['email']):
+            return jsonify({'error': 'Неправильный формат почты'}), 400
+
+        cursor.execute("SELECT * FROM users WHERE email = ?", (data['email'],))
+        existing_user = cursor.fetchone()
+        if not existing_user:
+            return jsonify({'error': 'Пользователь не существует'}), 400
+
+        columns = [column[0] for column in cursor.description]
+        user = {columns[i]: existing_user[i] for i in range(len(columns))}
+
+        if not check_password_hash(user['password'], data['password']):
+            return jsonify({'error': 'Неправильный пароль'}), 400
+
+        access_token = create_access_token(identity=user['id'])
+
+        return jsonify(access_token=access_token), 200
 
 
 if __name__ == '__main__':
