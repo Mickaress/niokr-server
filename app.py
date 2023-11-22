@@ -444,5 +444,49 @@ def get_skills():
         return jsonify({'skills': skills})
 
 
+# Создание вакансии
+@app.route("/api/supervisor/vacancy", methods=['POST'])
+@jwt_required()
+def create_vacancy():
+    with connect_db() as connection:
+        cursor = connection.cursor()
+
+        # Получение данных о пользователе
+        user_id = get_jwt_identity()
+        cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+        existing_user = cursor.fetchone()
+        columns = [column[0] for column in cursor.description]
+        user = {columns[i]: existing_user[i] for i in range(len(columns))}
+
+        data = request.get_json()
+
+        # Проверка на необходимые поля
+        error_response = required_fields(data, ['title', 'description', 'date_start', 'date_end', 'conditions', 'duties', 'requirements', 'project_id', 'skills'])
+        if error_response:
+            return jsonify({'error': error_response}), 400
+
+        # Получение данных о НИОКР
+        cursor.execute("SELECT * FROM projects WHERE id = ?", (data['project_id'],))
+        project_data = cursor.fetchone()
+        columns = [column[0] for column in cursor.description]
+        project = {columns[i]: project_data[i] for i in range(len(columns))}
+
+        # Проверка на доступ к выбранному НИОКР
+        if project['supervisor_id'] != user['id']:
+            return jsonify({'error': 'Нет доступа'}), 400
+
+        # Добавление вакансии в БД
+        cursor.execute("INSERT INTO vacancies (title, description, date_start, date_end, conditions, duties, requirements, project_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (data['title'], data['description'], data['date_start'], data['date_end'], data['conditions'], data['duties'], data['requirements'], data['project_id']))
+
+        # Получение id только что добавленной вакансии
+        vacancy_id = cursor.lastrowid
+
+        # Добавление навыков в таблицу vacancy_skill
+        for skill_id in data['skills']:
+            cursor.execute("INSERT INTO vacancy_skill (vacancy_id, skill_id) VALUES (?, ?)", (vacancy_id, skill_id))
+
+        return jsonify({'message': 'Вакансия добавлена'})
+
+
 if __name__ == '__main__':
     app.run(debug=True)
