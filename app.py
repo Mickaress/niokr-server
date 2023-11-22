@@ -519,5 +519,23 @@ def vacancy_response(vacancy_id):
 
         return jsonify({'message': 'Вы откликнулись на вакансию'})
 
+
+# Список откликов соискателя
+@app.route("/api/candidate/responses")
+@jwt_required()
+def get_candidate_responses():
+    with connect_db() as connection:
+        cursor = connection.cursor()
+
+        # Получение данных о пользователе
+        user_id = get_jwt_identity()
+
+        cursor.execute("SELECT * FROM responses WHERE user_id = ?", (user_id,))
+        columns = [column[0] for column in cursor.description]
+        responses = [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+        return jsonify({'responses': responses})
+
+
 if __name__ == '__main__':
     app.run(debug=True)
