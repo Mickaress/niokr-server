@@ -429,5 +429,20 @@ def admin_skill():
             return jsonify({'message': 'Навык обновлен'})
 
 
+# Получение списка навыков
+@app.route("/api/skills")
+@jwt_required()
+def get_skills():
+    with connect_db() as connection:
+        cursor = connection.cursor()
+
+        cursor.execute("SELECT * FROM skills WHERE is_accept is 1")
+
+        columns = [column[0] for column in cursor.description]
+        skills = [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+        return jsonify({'skills': skills})
+
+
 if __name__ == '__main__':
     app.run(debug=True)
