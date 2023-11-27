@@ -4,6 +4,7 @@ from project.routes import project
 from skill.routes import skill
 from user.routes import user
 from vacancy.routes import vacancy
+from response.routes import response
 
 app = Flask(__name__)
 
@@ -14,6 +15,7 @@ app.register_blueprint(project)
 app.register_blueprint(skill)
 app.register_blueprint(user)
 app.register_blueprint(vacancy)
+app.register_blueprint(response)
 
 
 if __name__ == '__main__':
