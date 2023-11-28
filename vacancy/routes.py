@@ -87,3 +87,42 @@ def create_vacancy():
             cursor.execute("INSERT INTO vacancy_skill (vacancy_id, skill_id) VALUES (?, ?)", (vacancy_id, skill_id))
 
         return jsonify({'message': 'Вакансия добавлена'})
+
+
+# Рассмотрение вакансий
+@vacancy.route("/api/admin/vacancy", methods=['GET', 'PATCH'])
+@jwt_required()
+def admin_vacancy():
+    with connect_db() as connection:
+        cursor = connection.cursor()
+
+        # Получение данных о пользователе
+        user_id = get_jwt_identity()
+        cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+        existing_user = cursor.fetchone()
+        columns = [column[0] for column in cursor.description]
+        user = {columns[i]: existing_user[i] for i in range(len(columns))}
+
+        # Только админ может одобрять/отклонять вакансии
+        if user['role_id'] != 4:
+            return jsonify({'message': 'Нет доступа'})
+
+        if request.method == 'GET':
+            cursor.execute("SELECT * FROM vacancies WHERE is_accept is null")
+
+            columns = [column[0] for column in cursor.description]
+            vacancies = [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+            return jsonify({'vacancies': vacancies})
+        else:
+            data = request.get_json()
+
+            # Проверка на наличие нужных полей в теле запроса
+            error_response = required_fields(data, ['id', 'is_accept'])
+            if error_response:
+                return jsonify({'error': error_response}), 400
+
+            # Обновление статуса вакансии
+            cursor.execute("UPDATE vacancies SET is_accept = ? WHERE id = ?", (data['is_accept'], data['id'],))
+
+            return jsonify({'message': 'Вакансия обновлена'})
