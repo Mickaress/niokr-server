@@ -1,7 +1,8 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
 from utils.db import connect_db
+from utils.request import required_fields
 
 response = Blueprint('response', __name__)
 
@@ -96,3 +97,55 @@ def get_vacancy_responses(vacancy_id):
         responses = [dict(zip(columns, row)) for row in cursor.fetchall()]
 
         return jsonify({'responses': responses})
+
+
+@response.route("/api/supervisor/response/<int:response_id>", methods=['PATCH'])
+@jwt_required()
+def review_response(response_id):
+    with connect_db() as connection:
+        cursor = connection.cursor()
+
+        # Получение данных о пользователе
+        user_id = get_jwt_identity()
+        cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+        existing_user = cursor.fetchone()
+        columns = [column[0] for column in cursor.description]
+        user = {columns[i]: existing_user[i] for i in range(len(columns))}
+
+        # Получение данных об отклике
+        cursor.execute("SELECT * FROM users WHERE id = ?", (response_id,))
+        existing_response = cursor.fetchone()
+        if not existing_response:
+            return jsonify({'error': 'Отклика не существует'}), 400
+        columns = [column[0] for column in cursor.description]
+        response = {columns[i]: existing_response[i] for i in range(len(columns))}
+
+        # Получение вакансии
+        cursor.execute("SELECT * FROM vacancies WHERE id = ?", (response['vacancy_id'],))
+        existing_vacancy = cursor.fetchone()
+        if not existing_response:
+            return jsonify({'error': 'Отклика не существует'}), 400
+        columns = [column[0] for column in cursor.description]
+        vacancy = {columns[i]: existing_vacancy[i] for i in range(len(columns))}
+
+        # Получение НИОКР
+        cursor.execute("SELECT * FROM projects WHERE id = ?", (vacancy['project_id'],))
+        existing_project = cursor.fetchone()
+        columns = [column[0] for column in cursor.description]
+        project = {columns[i]: existing_project[i] for i in range(len(columns))}
+
+        # Проверка на доступ
+        if project['supervisor_id'] != user['id']:
+            return jsonify({'error': 'Нет доступа'}), 400
+
+        # Получение статуса в теле запроса
+        data = request.get_json()
+
+        # Проверка на необходимые поля
+        error_response = required_fields(data, ['is_accept'])
+        if error_response:
+            return jsonify({'error': error_response}), 400
+
+        # Обновление отклика
+        cursor.execute("UPDATE responses SET is_accept = ? WHERE id = ?", (data['is_accept'], response_id,))
+
