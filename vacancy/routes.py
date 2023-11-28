@@ -7,6 +7,7 @@ from utils.request import required_fields
 vacancy = Blueprint('vacancy', __name__)
 
 
+# Получение списка вакансий
 @vacancy.route("/api/vacancies")
 def get_vacancies():
     with connect_db() as connection:
