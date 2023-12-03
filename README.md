@@ -12,7 +12,7 @@
 8. Авторизация /api/user/auth
 # Соискатель
 1. Отклик на вакансию /api/candidate/response/:id
-2. Просмотр своих откликов (сделано) /api/candidate/responses
+2. Просмотр своих откликов /api/candidate/responses
 3. Предложение новых навыков /api/skill
 4. Изменение своих навыков /api/candidate/skills
 # Руководитель

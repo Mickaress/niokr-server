@@ -48,21 +48,26 @@ def vacancy_response(vacancy_id):
 @response.route("/api/candidate/responses")
 @jwt_required()
 def get_candidate_responses():
-    with connect_db() as connection:
-        cursor = connection.cursor()
+    try:
+        with connect_db() as connection:
+            cursor = connection.cursor()
 
-        # Получение данных о пользователе
-        user_id = get_jwt_identity()
-        cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
-        existing_user = cursor.fetchone()
-        columns = [column[0] for column in cursor.description]
-        user = {columns[i]: existing_user[i] for i in range(len(columns))}
+            # Получение данных о пользователе
+            user_id = get_jwt_identity()
+            cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+            existing_user = cursor.fetchone()
+            columns = [column[0] for column in cursor.description]
+            user = {columns[i]: existing_user[i] for i in range(len(columns))}
 
-        cursor.execute("SELECT * FROM responses WHERE user_id = ?", (user_id,))
-        columns = [column[0] for column in cursor.description]
-        responses = [dict(zip(columns, row)) for row in cursor.fetchall()]
+            cursor.execute("SELECT * FROM responses WHERE user_id = ?", (user['id'],))
+            columns = [column[0] for column in cursor.description]
+            responses = [dict(zip(columns, row)) for row in cursor.fetchall()]
 
-        return jsonify({'responses': responses})
+            return jsonify({'responses': responses})
+
+    except Exception as e:
+        print(f"Ошибка подключения к базе данных: {e}")
+        return jsonify({'error': 'Ошибка сервера'}), 500
 
 
 # Получение списка откликов на вакансию
