@@ -9,25 +9,30 @@ project = Blueprint('project', __name__)
 # Получение списка НИОКР
 @project.route("/api/projects")
 def get_projects():
-    with connect_db() as connection:
-        cursor = connection.cursor()
+    try:
+        with connect_db() as connection:
+            cursor = connection.cursor()
 
-        # Общее количество записей для пагинации на фронте
-        cursor.execute("SELECT COUNT(*) FROM projects")
-        amount = cursor.fetchone()[0]
+            # Фильтр по странице
+            page = int(request.args.get('page', 1))
+            items_per_page = 3
+            offset = (page - 1) * items_per_page
+            limit = items_per_page
 
-        # Получение списка НИОКР на выбранной странице
-        page = int(request.args.get('page', 1))
-        items_per_page = 3
-        offset = (page - 1) * items_per_page
-        limit = items_per_page
+            # Общее количество записей для пагинации на фронте
+            cursor.execute("SELECT COUNT(*) FROM projects")
+            amount = cursor.fetchone()[0]
 
-        cursor.execute("SELECT * FROM projects LIMIT ? OFFSET ?", (limit, offset))
+            # Получение списка НИОКР
+            cursor.execute("SELECT * FROM projects LIMIT ? OFFSET ?", (limit, offset))
+            columns = [column[0] for column in cursor.description]
+            projects = [dict(zip(columns, row)) for row in cursor.fetchall()]
 
-        columns = [column[0] for column in cursor.description]
-        projects = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        return jsonify({'projects': projects, 'amount': amount})
 
-    return jsonify({'projects': projects, 'amount': amount})
+    except Exception as e:
+        print(f"Ошибка подключения к базе данных: {e}")
+        return jsonify({'error': 'Ошибка сервера'}), 500
 
 
 # Получение одного НИОКР
