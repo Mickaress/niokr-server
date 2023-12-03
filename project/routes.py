@@ -38,16 +38,24 @@ def get_projects():
 # Получение одного НИОКР
 @project.route("/api/project/<int:project_id>")
 def get_project(project_id):
-    with connect_db() as connection:
-        cursor = connection.cursor()
+    try:
+        with connect_db() as connection:
+            cursor = connection.cursor()
 
-        cursor.execute("SELECT * FROM projects WHERE id = ?", (project_id,))
-        project = cursor.fetchone()
+            cursor.execute("SELECT * FROM projects WHERE id = ?", (project_id,))
+            project_data = cursor.fetchone()
 
-    if project:
-        return jsonify({'project': project})
-    else:
-        return jsonify({'message': 'НИОКР не найден'}), 404
+            if not project_data:
+                return jsonify({'error': 'НИОКР не найден'}), 404
+
+            columns = [column[0] for column in cursor.description]
+            project = {columns[i]: project_data[i] for i in range(len(columns))}
+
+            return jsonify({'project': project})
+
+    except Exception as e:
+        print(f"Ошибка подключения к базе данных: {e}")
+        return jsonify({'error': 'Ошибка сервера'}), 500
 
 
 # Получение списка вакансий НИОКР
