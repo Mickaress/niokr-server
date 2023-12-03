@@ -14,7 +14,7 @@
 1. Отклик на вакансию (сделано) /api/candidate/response/:id
 2. Просмотр своих откликов (сделано) /api/candidate/responses
 3. Предложение новых навыков /api/skill
-4. Изменение своих навыков (сделано) /api/candidate/skills
+4. Изменение своих навыков /api/candidate/skills
 # Руководитель
 1. Просмотр списка своих НИОКР /api/supervisor/projects
 2. Просмотр списка откликов на вакансию в своем НИОКР (сделано)  /api/supervisor/vacancy/responses/:id
