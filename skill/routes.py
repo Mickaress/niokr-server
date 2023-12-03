@@ -95,15 +95,19 @@ def admin_skill():
 @skill.route("/api/skills")
 @jwt_required()
 def get_skills():
-    with connect_db() as connection:
-        cursor = connection.cursor()
+    try:
+        with connect_db() as connection:
+            cursor = connection.cursor()
 
-        cursor.execute("SELECT * FROM skills WHERE is_accept is 1")
+            cursor.execute("SELECT * FROM skills WHERE is_accept is 1")
+            columns = [column[0] for column in cursor.description]
+            skills = [dict(zip(columns, row)) for row in cursor.fetchall()]
 
-        columns = [column[0] for column in cursor.description]
-        skills = [dict(zip(columns, row)) for row in cursor.fetchall()]
+            return jsonify({'skills': skills})
 
-        return jsonify({'skills': skills})
+    except Exception as e:
+        print(f"Ошибка подключения к базе данных: {e}")
+        return jsonify({'error': 'Ошибка сервера'}), 500
 
 
 # Навыки соискателя
