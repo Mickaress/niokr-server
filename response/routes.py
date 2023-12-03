@@ -74,39 +74,52 @@ def get_candidate_responses():
 @response.route("/api/supervisor/vacancy/responses/<int:vacancy_id>")
 @jwt_required()
 def get_vacancy_responses(vacancy_id):
-    with connect_db() as connection:
-        cursor = connection.cursor()
+    try:
+        with connect_db() as connection:
+            cursor = connection.cursor()
 
-        # Получение данных о пользователе
-        user_id = get_jwt_identity()
-        cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
-        existing_user = cursor.fetchone()
-        columns = [column[0] for column in cursor.description]
-        user = {columns[i]: existing_user[i] for i in range(len(columns))}
+            # Получение данных о пользователе
+            user_id = get_jwt_identity()
+            cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+            existing_user = cursor.fetchone()
+            columns = [column[0] for column in cursor.description]
+            user = {columns[i]: existing_user[i] for i in range(len(columns))}
 
-        # Получение вакансии
-        cursor.execute("SELECT * FROM vacancies WHERE id = ?", (vacancy_id,))
-        vacancy_data = cursor.fetchone()
-        columns = [column[0] for column in cursor.description]
-        vacancy = {columns[i]: vacancy_data[i] for i in range(len(columns))}
+            # Получение вакансии
+            cursor.execute("SELECT * FROM vacancies WHERE id = ?", (vacancy_id,))
+            vacancy_data = cursor.fetchone()
 
-        # Получение НИОКР
-        project_id = vacancy['project_id']
-        cursor.execute("SELECT * FROM projects WHERE id = ?", (project_id,))
-        project_data = cursor.fetchone()
-        columns = [column[0] for column in cursor.description]
-        project = {columns[i]: project_data[i] for i in range(len(columns))}
+            if not vacancy_data:
+                return jsonify({'error': 'Вакансия не найдена'}), 404
 
-        # Проверка на доступ
-        if project['supervisor_id'] != user['id']:
-            return jsonify({'error': 'Нет доступа'}), 400
+            columns = [column[0] for column in cursor.description]
+            vacancy = {columns[i]: vacancy_data[i] for i in range(len(columns))}
 
-        # Получение списка откликов
-        cursor.execute("SELECT * FROM responses WHERE vacancy_id = ?", (vacancy['id'],))
-        columns = [column[0] for column in cursor.description]
-        responses = [dict(zip(columns, row)) for row in cursor.fetchall()]
+            # Получение НИОКР
+            project_id = vacancy['project_id']
+            cursor.execute("SELECT * FROM projects WHERE id = ?", (project_id,))
+            project_data = cursor.fetchone()
 
-        return jsonify({'responses': responses})
+            if not project_data:
+                return jsonify({'error': 'НИОКР не найден'}), 404
+
+            columns = [column[0] for column in cursor.description]
+            project = {columns[i]: project_data[i] for i in range(len(columns))}
+
+            # Проверка на доступ
+            if project['supervisor_id'] != user['id']:
+                return jsonify({'error': 'Нет доступа'}), 403
+
+            # Получение списка откликов
+            cursor.execute("SELECT * FROM responses WHERE vacancy_id = ?", (vacancy['id'],))
+            columns = [column[0] for column in cursor.description]
+            responses = [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+            return jsonify({'responses': responses})
+
+    except Exception as e:
+        print(f"Ошибка подключения к базе данных: {e}")
+        return jsonify({'error': 'Ошибка сервера'}), 500
 
 
 @response.route("/api/supervisor/response/<int:response_id>", methods=['PATCH'])

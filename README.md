@@ -17,7 +17,7 @@
 4. Изменение своих навыков /api/candidate/skills
 # Руководитель
 1. Просмотр списка своих НИОКР /api/supervisor/projects
-2. Просмотр списка откликов на вакансию в своем НИОКР (сделано)  /api/supervisor/vacancy/responses/:id
+2. Просмотр списка откликов на вакансию в своем НИОКР  /api/supervisor/vacancy/responses/:id
 3. Создание вакансии /api/supervisor/vacancy
 4. Предложение новых навыков /api/skill
 5. Модерация откликов (сделано) /api/supervisor/response/:id
