@@ -18,7 +18,7 @@
 # Руководитель
 1. Просмотр списка своих НИОКР (сделано) /api/supervisor/projects
 2. Просмотр списка откликов на вакансию в своем НИОКР (сделано)  /api/supervisor/vacancy/responses/:id
-3. Создание вакансии (сделано) /api/supervisor/vacancy
+3. Создание вакансии /api/supervisor/vacancy
 4. Предложение новых навыков (сделано) /api/skill
 5. Модерация откликов (сделано) /api/supervisor/response/:id
 # Администратор
