@@ -87,23 +87,26 @@ def get_project_vacancies(project_id):
 @project.route("/api/supervisor/projects")
 @jwt_required()
 def get_supervisor_projects():
-    with connect_db() as connection:
-        cursor = connection.cursor()
+    try:
+        with connect_db() as connection:
+            cursor = connection.cursor()
 
-        user_id = get_jwt_identity()
+            user_id = get_jwt_identity()
+            cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+            existing_user = cursor.fetchone()
+            columns = [column[0] for column in cursor.description]
+            user = {columns[i]: existing_user[i] for i in range(len(columns))}
 
-        cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
-        existing_user = cursor.fetchone()
+            if user['role_id'] != 3:
+                return jsonify({'error': 'Нет доступа'}), 403
 
-        columns = [column[0] for column in cursor.description]
-        user = {columns[i]: existing_user[i] for i in range(len(columns))}
+            cursor.execute("SELECT * FROM projects WHERE supervisor_id = ?", (user['id'],))
 
-        if user['role_id'] != 3:
-            return jsonify({'error': 'Нет доступа'}), 400
+            columns = [column[0] for column in cursor.description]
+            projects = [dict(zip(columns, row)) for row in cursor.fetchall()]
 
-        cursor.execute("SELECT * FROM projects WHERE supervisor_id = ?", (user['id'],))
+            return jsonify({'projects': projects})
 
-        columns = [column[0] for column in cursor.description]
-        projects = [dict(zip(columns, row)) for row in cursor.fetchall()]
-
-        return jsonify({'projects': projects})
+    except Exception as e:
+        print(f"Ошибка подключения к базе данных: {e}")
+        return jsonify({'error': 'Ошибка сервера'}), 500
