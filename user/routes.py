@@ -10,37 +10,41 @@ user = Blueprint('user', __name__)
 
 # Получение полей для регистрации (руководителя и админа убираем из ролей, так как их нельзя регистрировать)
 @user.route("/api/user/props")
-def get_roles():
-    with connect_db() as connection:
-        cursor = connection.cursor()
+def get_user_props():
+    try:
+        with connect_db() as connection:
+            cursor = connection.cursor()
 
-        # Получение ролей
-        cursor.execute("SELECT * FROM roles WHERE id IN (1, 2)")
-        columns = [column[0] for column in cursor.description]
-        roles = [dict(zip(columns, row)) for row in cursor.fetchall()]
+            # Получение ролей
+            cursor.execute("SELECT * FROM roles WHERE id IN (1, 2)")
+            columns = [column[0] for column in cursor.description]
+            roles = [dict(zip(columns, row)) for row in cursor.fetchall()]
 
-        # Получение групп
-        cursor.execute("SELECT * FROM groups")
-        columns = [column[0] for column in cursor.description]
-        groups = [dict(zip(columns, row)) for row in cursor.fetchall()]
+            # Получение групп
+            cursor.execute("SELECT * FROM groups")
+            columns = [column[0] for column in cursor.description]
+            groups = [dict(zip(columns, row)) for row in cursor.fetchall()]
 
-        # Получение институтов
-        cursor.execute("SELECT * FROM institutes")
-        columns = [column[0] for column in cursor.description]
-        institutes = [dict(zip(columns, row)) for row in cursor.fetchall()]
+            # Получение институтов
+            cursor.execute("SELECT * FROM institutes")
+            columns = [column[0] for column in cursor.description]
+            institutes = [dict(zip(columns, row)) for row in cursor.fetchall()]
 
-        # Получение
-        cursor.execute("SELECT * FROM departments")
-        columns = [column[0] for column in cursor.description]
-        departments = [dict(zip(columns, row)) for row in cursor.fetchall()]
+            # Получение кафедр
+            cursor.execute("SELECT * FROM departments")
+            columns = [column[0] for column in cursor.description]
+            departments = [dict(zip(columns, row)) for row in cursor.fetchall()]
 
-        cursor.execute("SELECT * FROM posts")
+            # Получение должностей
+            cursor.execute("SELECT * FROM posts")
+            columns = [column[0] for column in cursor.description]
+            posts = [dict(zip(columns, row)) for row in cursor.fetchall()]
 
-        columns = [column[0] for column in cursor.description]
-        posts = [dict(zip(columns, row)) for row in cursor.fetchall()]
+            return jsonify({'roles': roles, 'groups': groups, 'institutes': institutes, 'departments': departments, 'posts': posts})
 
-        return jsonify(
-            {'roles': roles, 'groups': groups, 'institutes': institutes, 'departments': departments, 'posts': posts})
+    except Exception as e:
+        print(f"Ошибка подключения к базе данных: {e}")
+        return jsonify({'error': 'Ошибка сервера'}), 500
 
 
 # Регистрация
