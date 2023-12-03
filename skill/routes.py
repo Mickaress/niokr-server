@@ -11,33 +11,38 @@ skill = Blueprint('skill', __name__)
 @skill.route("/api/skill", methods=['POST'])
 @jwt_required()
 def add_skill():
-    with connect_db() as connection:
-        cursor = connection.cursor()
+    try:
+        with connect_db() as connection:
+            cursor = connection.cursor()
 
-        # Получение данных о пользователе
-        user_id = get_jwt_identity()
-        cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
-        existing_user = cursor.fetchone()
-        columns = [column[0] for column in cursor.description]
-        user = {columns[i]: existing_user[i] for i in range(len(columns))}
+            # Получение данных о пользователе
+            user_id = get_jwt_identity()
+            cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+            existing_user = cursor.fetchone()
+            columns = [column[0] for column in cursor.description]
+            user = {columns[i]: existing_user[i] for i in range(len(columns))}
 
-        data = request.get_json()
+            data = request.get_json()
 
-        # Проверка на наличие названия навыка в теле запроса
-        error_response = required_fields(data, ['name'])
-        if error_response:
-            return jsonify({'error': error_response}), 400
+            # Проверка на наличие названия навыка в теле запроса
+            error_response = required_fields(data, ['name'])
+            if error_response:
+                return jsonify({'error': error_response}), 400
 
-        # Админ может сразу создать одобренный навык
-        if user['role_id'] == 4:
-            cursor.execute("INSERT INTO skills (name, is_accept) VALUES (?, ?)", (data['name'], 1))
+            # Админ может сразу создать одобренный навык
+            if user['role_id'] == 4:
+                cursor.execute("INSERT INTO skills (name, is_accept) VALUES (?, ?)", (data['name'], 1))
 
-            return jsonify({'message': 'Навык добавлен'})
+                return jsonify({'message': 'Навык добавлен'})
 
-        # Другие роли могут добавить навыки только после рассмотрения администратором
-        cursor.execute("INSERT INTO skills (name) VALUES (?)", (data['name'],))
+            # Другие роли могут добавить навыки только после рассмотрения администратором
+            cursor.execute("INSERT INTO skills (name) VALUES (?)", (data['name'],))
 
-        return jsonify({'message': 'Навык на рассмотрение'})
+            return jsonify({'message': 'Навык на рассмотрение'})
+
+    except Exception as e:
+        print(f"Ошибка подключения к базе данных: {e}")
+        return jsonify({'error': 'Ошибка сервера'}), 500
 
 
 # Рассмотрение навыков
