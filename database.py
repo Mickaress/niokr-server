@@ -117,7 +117,8 @@ cursor.execute('''
         duties TEXT NOT NULL,
         requirements TEXT NOT NULL,
         project_id INTEGER REFERENCES projects(id) NOT NULL,
-        is_accept INTEGER CHECK (is_accept IN (0, 1)) DEFAULT NULL
+        is_accept INTEGER CHECK (is_accept IN (0, 1)) DEFAULT NULL,
+        salary INTEGER DEFAULT 0
     )
 ''')
 
