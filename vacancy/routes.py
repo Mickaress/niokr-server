@@ -69,7 +69,7 @@ def get_vacancy(vacancy_id):
             vacancy_data = cursor.fetchone()
 
             if not vacancy_data:
-                return jsonify({'message': 'Вакансия не найдена'}), 404
+                return jsonify({'error': 'Вакансия не найдена'}), 404
 
             columns = [column[0] for column in cursor.description]
             vacancy = {columns[i]: vacancy_data[i] for i in range(len(columns))}
