@@ -52,9 +52,10 @@ def get_vacancies():
             vacancies = [dict(zip(columns, row)) for row in cursor.fetchall()]
 
         return jsonify({'vacancies': vacancies, 'amount': amount})
+    
     except Exception as e:
         print(f"Ошибка подключения к базе данных: {e}")
-        return jsonify({'message': 'Ошибка сервера'}), 500
+        return jsonify({'error': 'Ошибка сервера'}), 500
 
 
 # Получение одной вакансии
