@@ -9,7 +9,7 @@
 5. Получение списка вакансий НИОКР /api/project/:id/vacancies
 6. Получение данных для регистрации /api/user/props
 7. Регистрация /api/user/registration
-8. Авторизация (сделано) /api/user/auth
+8. Авторизация /api/user/auth
 # Соискатель
 1. Отклик на вакансию (сделано) /api/candidate/response/:id
 2. Просмотр своих откликов (сделано) /api/candidate/responses

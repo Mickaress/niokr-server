@@ -40,7 +40,8 @@ def get_user_props():
             columns = [column[0] for column in cursor.description]
             posts = [dict(zip(columns, row)) for row in cursor.fetchall()]
 
-            return jsonify({'roles': roles, 'groups': groups, 'institutes': institutes, 'departments': departments, 'posts': posts})
+            return jsonify({'roles': roles, 'groups': groups, 'institutes': institutes, 'departments': departments,
+                            'posts': posts})
 
     except Exception as e:
         print(f"Ошибка подключения к базе данных: {e}")
@@ -164,31 +165,37 @@ def registration():
 # Авторизация
 @user.route("/api/user/auth", methods=['POST'])
 def auth():
-    with connect_db() as connection:
-        cursor = connection.cursor()
+    try:
+        with connect_db() as connection:
+            cursor = connection.cursor()
 
-        data = request.get_json()
+            data = request.get_json()
 
-        # Проверка на необходимые поля
-        error_response = required_fields(data, ['email', 'password'])
-        if error_response:
-            return jsonify({'error': error_response}), 400
+            # Проверка на необходимые поля
+            error_response = required_fields(data, ['email', 'password'])
+            if error_response:
+                return jsonify({'error': error_response}), 400
 
-        # Валидация почты
-        if not is_valid_email(data['email']):
-            return jsonify({'error': 'Неправильный формат почты'}), 400
+            # Валидация почты
+            if not is_valid_email(data['email']):
+                return jsonify({'error': 'Неправильный формат почты'}), 400
 
-        cursor.execute("SELECT * FROM users WHERE email = ?", (data['email'],))
-        existing_user = cursor.fetchone()
-        if not existing_user:
-            return jsonify({'error': 'Пользователь не существует'}), 400
+            # Поиск пользователя
+            cursor.execute("SELECT * FROM users WHERE email = ?", (data['email'],))
+            existing_user = cursor.fetchone()
+            if not existing_user:
+                return jsonify({'error': 'Пользователь не существует'}), 404
+            columns = [column[0] for column in cursor.description]
+            user = {columns[i]: existing_user[i] for i in range(len(columns))}
 
-        columns = [column[0] for column in cursor.description]
-        user = {columns[i]: existing_user[i] for i in range(len(columns))}
+            # Проверка пароля
+            if not check_password_hash(user['password'], data['password']):
+                return jsonify({'error': 'Неправильный пароль'}), 401
 
-        if not check_password_hash(user['password'], data['password']):
-            return jsonify({'error': 'Неправильный пароль'}), 400
+            access_token = create_access_token(identity=user['id'])
 
-        access_token = create_access_token(identity=user['id'])
+            return jsonify(access_token=access_token)
 
-        return jsonify(access_token=access_token), 200
+    except Exception as e:
+        print(f"Ошибка подключения к базе данных: {e}")
+        return jsonify({'error': 'Ошибка сервера'}), 500
