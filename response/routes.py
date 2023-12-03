@@ -11,32 +11,37 @@ response = Blueprint('response', __name__)
 @response.route("/api/candidate/response/<int:vacancy_id>", methods=['POST'])
 @jwt_required()
 def vacancy_response(vacancy_id):
-    with connect_db() as connection:
-        cursor = connection.cursor()
+    try:
+        with connect_db() as connection:
+            cursor = connection.cursor()
 
-        # Получение данных о пользователе
-        user_id = get_jwt_identity()
-        cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
-        existing_user = cursor.fetchone()
-        columns = [column[0] for column in cursor.description]
-        user = {columns[i]: existing_user[i] for i in range(len(columns))}
+            # Получение данных о пользователе
+            user_id = get_jwt_identity()
+            cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+            existing_user = cursor.fetchone()
+            columns = [column[0] for column in cursor.description]
+            user = {columns[i]: existing_user[i] for i in range(len(columns))}
 
-        if user['role_id'] not in [1, 2]:
-            return jsonify({'error': 'Нет доступа'}), 400
+            if user['role_id'] not in [1, 2]:
+                return jsonify({'error': 'Нет доступа'}), 403
 
-        cursor.execute("SELECT * FROM vacancies WHERE id = ?", (vacancy_id,))
-        existing_vacancy = cursor.fetchone()
-        if not existing_vacancy:
-            return jsonify({'error': 'Выбранной вакансии не существует'}), 400
+            cursor.execute("SELECT * FROM vacancies WHERE id = ?", (vacancy_id,))
+            existing_vacancy = cursor.fetchone()
+            if not existing_vacancy:
+                return jsonify({'error': 'Выбранной вакансии не существует'}), 404
 
-        cursor.execute("SELECT * FROM responses WHERE user_id = ? AND vacancy_id = ?", (user['id'], vacancy_id,))
-        existing_response = cursor.fetchone()
-        if existing_response:
-            return jsonify({'error': 'Вы уже откликнулись на эту вакансию'}), 400
+            cursor.execute("SELECT * FROM responses WHERE user_id = ? AND vacancy_id = ?", (user['id'], vacancy_id,))
+            existing_response = cursor.fetchone()
+            if existing_response:
+                return jsonify({'error': 'Вы уже откликнулись на эту вакансию'}), 409
 
-        cursor.execute("INSERT INTO responses (user_id, vacancy_id) VALUES (?, ?)", (user['id'], vacancy_id,))
+            cursor.execute("INSERT INTO responses (user_id, vacancy_id) VALUES (?, ?)", (user['id'], vacancy_id,))
 
-        return jsonify({'message': 'Вы откликнулись на вакансию'})
+            return jsonify({'message': 'Вы откликнулись на вакансию'})
+
+    except Exception as e:
+        print(f"Ошибка подключения к базе данных: {e}")
+        return jsonify({'error': 'Ошибка сервера'}), 500
 
 
 # Список откликов соискателя

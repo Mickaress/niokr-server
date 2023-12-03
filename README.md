@@ -11,7 +11,7 @@
 7. Регистрация /api/user/registration
 8. Авторизация /api/user/auth
 # Соискатель
-1. Отклик на вакансию (сделано) /api/candidate/response/:id
+1. Отклик на вакансию /api/candidate/response/:id
 2. Просмотр своих откликов (сделано) /api/candidate/responses
 3. Предложение новых навыков /api/skill
 4. Изменение своих навыков /api/candidate/skills
