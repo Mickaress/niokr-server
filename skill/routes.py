@@ -49,39 +49,46 @@ def add_skill():
 @skill.route("/api/admin/skill", methods=['GET', 'PATCH'])
 @jwt_required()
 def admin_skill():
-    with connect_db() as connection:
-        cursor = connection.cursor()
+    try:
+        with connect_db() as connection:
+            cursor = connection.cursor()
 
-        # Получение данных о пользователе
-        user_id = get_jwt_identity()
-        cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
-        existing_user = cursor.fetchone()
-        columns = [column[0] for column in cursor.description]
-        user = {columns[i]: existing_user[i] for i in range(len(columns))}
-
-        # Только админ может одобрять/отклонять навыки
-        if user['role_id'] != 4:
-            return jsonify({'message': 'Нет доступа'})
-
-        if request.method == 'GET':
-            cursor.execute("SELECT * FROM skills WHERE is_accept is null")
-
+            # Получение данных о пользователе
+            user_id = get_jwt_identity()
+            cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+            existing_user = cursor.fetchone()
             columns = [column[0] for column in cursor.description]
-            skills = [dict(zip(columns, row)) for row in cursor.fetchall()]
+            user = {columns[i]: existing_user[i] for i in range(len(columns))}
 
-            return jsonify({'skills': skills})
-        else:
-            data = request.get_json()
+            # Только админ может одобрять/отклонять навыки
+            if user['role_id'] != 4:
+                return jsonify({'error': 'Нет доступа'}), 403
 
-            # Проверка на наличие нужных полей в теле запроса
-            error_response = required_fields(data, ['id', 'is_accept'])
-            if error_response:
-                return jsonify({'error': error_response}), 400
+            # Получение списка навыков, которые требуют рассмотрения
+            if request.method == 'GET':
+                cursor.execute("SELECT * FROM skills WHERE is_accept is null")
 
-            # Обновление статуса навыка
-            cursor.execute("UPDATE skills SET is_accept = ? WHERE id = ?", (data['is_accept'], data['id'],))
+                columns = [column[0] for column in cursor.description]
+                skills = [dict(zip(columns, row)) for row in cursor.fetchall()]
 
-            return jsonify({'message': 'Навык обновлен'})
+                return jsonify({'skills': skills})
+            # Обновление информации о навыке
+            else:
+                data = request.get_json()
+
+                # Проверка на наличие нужных полей в теле запроса
+                error_response = required_fields(data, ['id', 'is_accept'])
+                if error_response:
+                    return jsonify({'error': error_response}), 400
+
+                # Обновление статуса навыка
+                cursor.execute("UPDATE skills SET is_accept = ? WHERE id = ?", (data['is_accept'], data['id'],))
+
+                return jsonify({'message': 'Навык обновлен'})
+
+    except Exception as e:
+        print(f"Ошибка подключения к базе данных: {e}")
+        return jsonify({'error': 'Ошибка сервера'}), 500
 
 
 # Получение списка навыков
