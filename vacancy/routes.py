@@ -60,16 +60,24 @@ def get_vacancies():
 # Получение одной вакансии
 @vacancy.route("/api/vacancy/<int:vacancy_id>")
 def get_vacancy(vacancy_id):
-    with connect_db() as connection:
-        cursor = connection.cursor()
+    try:
+        with connect_db() as connection:
+            cursor = connection.cursor()
 
-        cursor.execute("SELECT * FROM vacancies WHERE is_accept = 1 AND id = ?", (vacancy_id,))
-        vacancy = cursor.fetchone()
+            cursor.execute("SELECT * FROM vacancies WHERE is_accept = 1 AND id = ?", (vacancy_id,))
+            vacancy_data = cursor.fetchone()
 
-    if vacancy:
-        return jsonify({'vacancy': vacancy})
-    else:
-        return jsonify({'message': 'Вакансия не найдена'}), 404
+            if not vacancy_data:
+                return jsonify({'message': 'Вакансия не найдена'}), 404
+
+            columns = [column[0] for column in cursor.description]
+            vacancy = {columns[i]: vacancy_data[i] for i in range(len(columns))}
+
+            return jsonify({'vacancy': vacancy})
+
+    except Exception as e:
+        print(f"Ошибка подключения к базе данных: {e}")
+        return jsonify({'error': 'Ошибка сервера'}), 500
 
 
 # Создание вакансии
