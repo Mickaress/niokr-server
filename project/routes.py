@@ -61,15 +61,26 @@ def get_project(project_id):
 # Получение списка вакансий НИОКР
 @project.route("/api/project/<int:project_id>/vacancies")
 def get_project_vacancies(project_id):
-    with connect_db() as connection:
-        cursor = connection.cursor()
+    try:
+        with connect_db() as connection:
+            cursor = connection.cursor()
 
-        cursor.execute("SELECT * FROM vacancies WHERE project_id = ?", (project_id,))
+            cursor.execute("SELECT * FROM projects WHERE id = ?", (project_id,))
+            project = cursor.fetchone()
 
-        columns = [column[0] for column in cursor.description]
-        vacancies = [dict(zip(columns, row)) for row in cursor.fetchall()]
+            if not project:
+                return jsonify({'error': 'НИОКР не найден'}), 404
 
-        return jsonify({'projects': vacancies})
+            cursor.execute("SELECT * FROM vacancies WHERE project_id = ?", (project_id,))
+
+            columns = [column[0] for column in cursor.description]
+            vacancies = [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+            return jsonify({'vacancies': vacancies})
+
+    except Exception as e:
+        print(f"Ошибка подключения к базе данных: {e}")
+        return jsonify({'error': 'Ошибка сервера'}), 500
 
 
 # Получение списка НИОКР руководителя
