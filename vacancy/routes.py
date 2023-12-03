@@ -10,25 +10,51 @@ vacancy = Blueprint('vacancy', __name__)
 # Получение списка вакансий
 @vacancy.route("/api/vacancies")
 def get_vacancies():
-    with connect_db() as connection:
-        cursor = connection.cursor()
+    try:
+        with connect_db() as connection:
+            cursor = connection.cursor()
 
-        # Общее количество записей для пагинации на фронте
-        cursor.execute("SELECT COUNT(*) FROM vacancies WHERE is_accept = 1")
-        amount = cursor.fetchone()[0]
+            # Фильтр по странице
+            page = int(request.args.get('page', 1))
+            items_per_page = 3
+            offset = (page - 1) * items_per_page
+            limit = items_per_page
 
-        # Получение списка вакансий на выбранной странице
-        page = int(request.args.get('page', 1))
-        items_per_page = 3
-        offset = (page - 1) * items_per_page
-        limit = items_per_page
+            # Фильтр по названию
+            title = str(request.args.get('title', ''))
 
-        cursor.execute("SELECT * FROM vacancies WHERE is_accept = 1 LIMIT ? OFFSET ?", (limit, offset))
+            # Фильтр по оплате
+            payment = str(request.args.get('payment'))
+            payment_condition = ""
+            if payment:
+                if payment == 'true':
+                    payment_condition = f" AND salary > 0"
+                if payment == 'false':
+                    payment_condition = f" AND salary = 0"
 
-        columns = [column[0] for column in cursor.description]
-        vacancies = [dict(zip(columns, row)) for row in cursor.fetchall()]
+            # Фильтр по навыкам
+            skills = request.args.getlist('skills')
+            skill_conditions = ""
+            if skills:
+                placeholders = ', '.join('?' for _ in skills)
+                skill_conditions = f" AND vacancies.id IN (SELECT vacancy_id FROM vacancy_skill WHERE skill_id IN ({placeholders}))"
 
-    return jsonify({'vacancies': vacancies, 'amount': amount})
+            # Общее количество записей для пагинации на фронте
+            count_query = f"SELECT COUNT(*) FROM vacancies WHERE is_accept = 1 AND LOWER(title) LIKE LOWER(?) {payment_condition} {skill_conditions}"
+            cursor.execute(count_query, (f"%{title}%", *skills))
+            amount = cursor.fetchone()[0]
+
+            # Получение списка вакансий
+            query = f"SELECT * FROM vacancies WHERE is_accept = 1 AND LOWER(title) LIKE LOWER(?) {payment_condition} {skill_conditions} LIMIT ? OFFSET ?"
+            cursor.execute(query, (f"%{title}%", *skills, limit, offset))
+
+            columns = [column[0] for column in cursor.description]
+            vacancies = [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+        return jsonify({'vacancies': vacancies, 'amount': amount})
+    except Exception as e:
+        print(f"Ошибка подключения к базе данных: {e}")
+        return jsonify({'message': 'Ошибка сервера'}), 500
 
 
 # Получение одной вакансии
