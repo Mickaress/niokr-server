@@ -96,7 +96,6 @@ cursor.execute('''
     CREATE TABLE IF NOT EXISTS projects (
         id INTEGER PRIMARY KEY,
         title TEXT NOT NULL,
-        salary INTEGER DEFAULT 0,
         date_start TEXT NOT NULL,
         date_end TEXT NOT NULL,
         conditions TEXT NOT NULL,
