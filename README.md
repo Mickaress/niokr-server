@@ -20,7 +20,7 @@
 2. Просмотр списка откликов на вакансию в своем НИОКР  /api/supervisor/vacancy/responses/:id
 3. Создание вакансии /api/supervisor/vacancy
 4. Предложение новых навыков /api/skill
-5. Модерация откликов (сделано) /api/supervisor/response/:id
+5. Модерация откликов /api/supervisor/response/:id
 # Администратор
 1. Добавление навыков /api/skill
 2. Рассмотрение предложенных навыков /api/admin/skill
